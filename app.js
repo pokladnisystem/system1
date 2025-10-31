@@ -1,4 +1,3 @@
-// app.js - Pokladni system v JS (localStorage)
 "use strict";
 
 /* ---------- storage keys ---------- */
@@ -15,9 +14,11 @@ let state = {
 /* ---------- helpers ---------- */
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
 const saveData = () => {
   localStorage.setItem(KEY_DATA, JSON.stringify({ products: state.products, sales: state.sales }));
 };
+
 const loadData = () => {
   const raw = localStorage.getItem(KEY_DATA);
   if (!raw) return;
@@ -29,18 +30,23 @@ const loadData = () => {
     console.error("Failed to parse data", e);
   }
 };
+
 const saveLogin = (username, password) => {
   const payload = { username: btoa(username), password: btoa(password) };
   localStorage.setItem(KEY_LOGIN, JSON.stringify(payload));
 };
+
 const loadLogin = () => {
   const raw = localStorage.getItem(KEY_LOGIN);
   if (!raw) return null;
   try {
     const d = JSON.parse(raw);
     return { username: atob(d.username), password: atob(d.password) };
-  } catch (e) { return null; }
+  } catch (e) {
+    return null;
+  }
 };
+
 const encodeJSONFile = (content, filename) => {
   const blob = new Blob([content], { type: "application/json;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -48,6 +54,7 @@ const encodeJSONFile = (content, filename) => {
   a.href = url; a.download = filename; document.body.appendChild(a); a.click();
   a.remove(); URL.revokeObjectURL(url);
 };
+
 const downloadTextFile = (text, filename) => {
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -108,7 +115,6 @@ function renderCart() {
     total += subtotal;
     tr.innerHTML = `<td>${escapeHtml(it.name)}</td><td>${it.count}</td><td>${subtotal.toFixed(2)}</td>`;
     tr.addEventListener("click", () => {
-      // select row
       cartTableBody.querySelectorAll("tr").forEach(r => r.classList.remove("selected"));
       tr.classList.add("selected");
     });
@@ -129,7 +135,6 @@ function renderSales() {
     el.innerHTML = `<div><strong>${escapeHtml(s.order_id)}</strong><div class="muted">${escapeHtml(s.date)} • ${escapeHtml(s.payment)}</div></div>
                     <div>${(computeTotalFromItems(s.items)*(1 - s.discount/100)).toFixed(2)} Kč</div>`;
     el.addEventListener("click", () => {
-      // show receipt and allow download
       if (confirm("Chceš stáhnout účtenku?")) {
         downloadTextFile(s.receipt, `receipt_${s.order_id}.txt`);
       }
@@ -186,7 +191,6 @@ function completeOrder() {
     note
   });
 
-  // offer to download receipt
   if (confirm("Účet uložen. Chceš stáhnout účtenku jako TXT?")) {
     downloadTextFile(receipt, `receipt_${orderId}.txt`);
   }
@@ -200,10 +204,8 @@ function completeOrder() {
 
 /* ---------- utils ---------- */
 function pad(n){ return n.toString().padStart(2,'0'); }
-function computeTotalFromItems(items){
-  return items.reduce((s,i)=> s + i.price*i.count, 0);
-}
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])); }
+function computeTotalFromItems(items){ return items.reduce((s,i)=> s + i.price*i.count, 0); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;'}[m])); }
 
 /* ---------- auth flow ---------- */
 function showAuthScreen(setupMode=false) {
@@ -214,9 +216,11 @@ function showAuthScreen(setupMode=false) {
   authPassword.value = "";
   authUsername.value = "";
 }
+
 function showMainScreen() {
   authScreen.classList.add("hidden");
   mainScreen.classList.remove("hidden");
+  loadData(); // načíst produkty a prodeje až po přihlášení
   renderProducts();
   renderCart();
   renderSales();
@@ -228,7 +232,6 @@ authLoginBtn.addEventListener("click", () => {
   if (!creds) { authMsg.textContent = "Neexistují uložené přihlašovací údaje. Vytvoř účet (Setup)."; return; }
   const u = authUsername.value.trim(), p = authPassword.value;
   if (u === creds.username && p === creds.password) {
-    loadData();
     showMainScreen();
   } else {
     authMsg.textContent = "Nesprávné přihlašovací údaje!";
@@ -252,7 +255,6 @@ addProductBtn.addEventListener("click", () => {
   if (priceRaw === null) return;
   const price = parseFloat(priceRaw);
   if (isNaN(price)) return alert("Neplatná cena!");
-  // upsert
   const found = state.products.find(p => p.name === name);
   if (found) found.price = Math.round(price*100)/100;
   else state.products.push({ name, price: Math.round(price*100)/100 });
@@ -265,10 +267,7 @@ exportProductsBtn.addEventListener("click", () => {
   encodeJSONFile(content, "products_export.json");
 });
 
-importProductsBtn.addEventListener("click", () => {
-  importProductsFile.value = "";
-  importProductsFile.click();
-});
+importProductsBtn.addEventListener("click", () => importProductsFile.click());
 importProductsFile.addEventListener("change", (ev) => {
   const f = ev.target.files[0];
   if (!f) return;
@@ -277,17 +276,12 @@ importProductsFile.addEventListener("change", (ev) => {
     try {
       const arr = JSON.parse(e.target.result);
       if (!Array.isArray(arr)) throw new Error("Neplatný formát");
-      // basic validation
-      arr.forEach(it => {
-        if (!it.name || typeof it.price !== "number") throw new Error("Neplatný item");
-      });
+      arr.forEach(it => { if (!it.name || typeof it.price !== "number") throw new Error("Neplatný item"); });
       state.products = arr;
       saveData();
       renderProducts();
       alert("Produkty naimportovány.");
-    } catch (err) {
-      alert("Import selhal: " + (err.message || err));
-    }
+    } catch (err) { alert("Import selhal: " + (err.message || err)); }
   };
   reader.readAsText(f, "utf-8");
 });
@@ -305,7 +299,7 @@ logoutBtn.addEventListener("click", () => {
   showAuthScreen(false);
 });
 
-// keyboard shortcuts
+// klávesové zkratky
 window.addEventListener("keydown", (e) => {
   if (e.key === "F4") { e.preventDefault(); completeOrder(); }
   if (e.key === "Delete") { removeSelectedItem(); }
@@ -314,11 +308,8 @@ window.addEventListener("keydown", (e) => {
 /* ---------- init ---------- */
 function init() {
   const creds = loadLogin();
-  if (!creds) {
-    showAuthScreen(true); // setup mode
-  } else {
-    showAuthScreen(false);
-  }
-  loadData();
+  if (!creds) showAuthScreen(true);
+  else showAuthScreen(false);
 }
+
 init();
