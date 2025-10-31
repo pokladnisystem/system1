@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pokladní Systém</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app" class="app-root">
+    <!-- LOGIN / SETUP -->
+    <div id="auth-screen" class="panel center">
+      <div class="card auth-card">
+        <h1>Přihlášení do systému</h1>
+        <div id="setup-note" class="muted">⚙️ Tento počítač nemá nastavené přihlašovací údaje — vytvoř je.</div>
+        <label>Uživatelské jméno
+          <input id="auth-username" type="text" />
+        </label>
+        <label>Heslo
+          <input id="auth-password" type="password" />
+        </label>
+        <div class="row">
+          <button id="auth-login" class="btn primary">Přihlásit se</button>
+          <button id="auth-setup" class="btn">Vytvořit účet (setup)</button>
+        </div>
+        <div id="auth-msg" class="muted"></div>
+      </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="main-screen" class="hidden">
+      <header class="topbar">
+        <h2>Pokladní Systém</h2>
+        <div class="top-actions">
+          <button id="btn-logout" class="btn">Odhlásit se</button>
+        </div>
+      </header>
+
+      <main class="content">
+        <aside class="sidebar">
+          <div class="card">
+            <h3>Produkty</h3>
+            <div id="products-list" class="products-list"></div>
+
+            <div class="controls">
+              <button id="btn-add-product" class="btn">+ Přidat produkt</button>
+              <input id="import-products-file" type="file" accept=".json" style="display:none" />
+              <button id="btn-export-products" class="btn">Exportovat produkty</button>
+              <button id="btn-import-products" class="btn">Importovat produkty</button>
+            </div>
+          </div>
+
+        </aside>
+
+        <section class="main-panel">
+          <div class="card">
+            <h3>Aktuální objednávka</h3>
+            <div class="cart-area">
+              <table id="cart-table" class="cart-table">
+                <thead>
+                  <tr><th>Název</th><th>Ks</th><th>Cena (CZK)</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <div class="cart-footer">
+                <div id="total-text" class="total">Celkem: 0.00 CZK</div>
+                <div class="cart-actions">
+                  <button id="btn-remove-selected" class="btn">Odstranit vybraný produkt</button>
+                  <button id="btn-complete" class="btn primary">Zakončit účet (F4)</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card small">
+            <h4>Historie prodejů</h4>
+            <div id="sales-history" class="sales-history"></div>
+            <div class="controls">
+              <button id="btn-clear-sales" class="btn">Smazat historii</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <template id="product-button-tpl">
+    <div class="product-item">
+      <button class="product-btn"></button>
+    </div>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
