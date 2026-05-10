@@ -249,28 +249,24 @@ function showMainScreen() {
   renderSales();
 }
 
-function maybePromptDefaultPasswordChange(creds) {
-  if (!isDefaultLogin(creds)) return true;
-  const wantsChange = confirm("Používáš výchozí heslo. Chceš ho změnit?");
-  if (!wantsChange) return true;
-  showAuthScreen(false);
-  authMsg.textContent = "Zadej nové heslo (min. 8 znaků) a potvrď změnu tlačítkem Uložit přihlášení.";
-  authUsername.value = creds.username;
-  return false;
-}
-
 /* ---------- event wiring ---------- */
 authLoginBtn.addEventListener("click", () => {
   const creds = ensureDefaultLogin();
   const u = authUsername.value.trim(), p = authPassword.value;
-  if (u === creds.username && p === creds.password) {
-    const shouldContinue = maybePromptDefaultPasswordChange(creds);
-    if (shouldContinue) {
-      showMainScreen();
-    }
-  } else {
+  if (u !== creds.username || p !== creds.password) {
     authMsg.textContent = "Nesprávné přihlašovací údaje!";
+    return;
   }
+  if (isDefaultLogin(creds)) {
+    const wantsChange = confirm("Používáš výchozí heslo. Chceš ho změnit?");
+    if (wantsChange) {
+      showAuthScreen(true);
+      authMsg.textContent = "Zadej nové heslo (min. 8 znaků) a potvrď změnu tlačítkem Uložit přihlášení.";
+      authUsername.value = creds.username;
+      return;
+    }
+  }
+  showMainScreen();
 });
 
 authSetupBtn.addEventListener("click", () => {
