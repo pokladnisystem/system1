@@ -253,7 +253,7 @@ function maybePromptDefaultPasswordChange(creds) {
   const wantsChange = confirm("Používáš výchozí heslo. Chceš ho změnit?");
   if (!wantsChange) return;
   showAuthScreen(true);
-  authMsg.textContent = "Zadej nové heslo (min. 6 znaků) a klikni na Vytvořit účet (Setup).";
+  authMsg.textContent = "Zadej nové heslo (min. 8 znaků) a klikni na Vytvořit účet (Setup).";
   authUsername.value = creds.username;
 }
 
@@ -274,7 +274,7 @@ authSetupBtn.addEventListener("click", () => {
   if (!u) return alert("Musíš zadat uživatelské jméno.");
   const p = authPassword.value;
   if (!p) return alert("Musíš zadat heslo.");
-  if (p.length < 6) return alert("Heslo musí mít alespoň 6 znaků.");
+  if (p.length < 8) return alert("Heslo musí mít alespoň 8 znaků.");
   saveLogin(u, p);
   alert("Účet byl vytvořen. Přihlaš se.");
   showAuthScreen(true);
