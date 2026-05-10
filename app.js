@@ -295,7 +295,7 @@ authSetupBtn.addEventListener("click", () => {
   }
 
   saveLogin(u, p);
-  alert("Účet byl vytvořen. Přihlaš se.");
+  alert("Přihlašovací údaje byly uloženy nebo změněny. Přihlaš se.");
   showAuthScreen(true);
 });
 
