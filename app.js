@@ -3,7 +3,6 @@
 /* ---------- storage keys ---------- */
 const KEY_LOGIN = "pokladna_login";
 const KEY_DATA = "pokladna_data";
-const KEY_DEFAULT_ACK = "pokladna_default_login_ack";
 const DEFAULT_LOGIN = { username: "admin", password: "heslo" };
 
 /* ---------- app state ---------- */
@@ -66,7 +65,6 @@ const ensureDefaultLogin = () => {
   const stored = loadLogin();
   if (isValidLogin(stored)) return stored;
   saveLogin(DEFAULT_LOGIN.username, DEFAULT_LOGIN.password);
-  localStorage.removeItem(KEY_DEFAULT_ACK);
   return DEFAULT_LOGIN;
 };
 
@@ -252,9 +250,7 @@ function showMainScreen() {
 
 function maybePromptDefaultPasswordChange(creds) {
   if (!isDefaultLogin(creds)) return;
-  if (localStorage.getItem(KEY_DEFAULT_ACK) === "1") return;
   const wantsChange = confirm("Používáš výchozí heslo. Chceš ho změnit?");
-  localStorage.setItem(KEY_DEFAULT_ACK, "1");
   if (!wantsChange) return;
   const newPassword = prompt("Zadej nové heslo:");
   if (!newPassword) return alert("Heslo nebylo změněno.");
@@ -280,7 +276,6 @@ authSetupBtn.addEventListener("click", () => {
   const p = authPassword.value || prompt("Zadej heslo:");
   if (!p) return alert("Musíš zadat heslo.");
   saveLogin(u, p);
-  localStorage.setItem(KEY_DEFAULT_ACK, isDefaultLogin({ username: u, password: p }) ? "0" : "1");
   alert("Účet byl vytvořen. Přihlaš se.");
   showAuthScreen(true);
 });
