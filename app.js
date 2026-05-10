@@ -3,6 +3,7 @@
 /* ---------- storage keys ---------- */
 const KEY_LOGIN = "pokladna_login";
 const KEY_DATA = "pokladna_data";
+const DEFAULT_LOGIN = { username: "admin", password: "heslo" };
 
 /* ---------- app state ---------- */
 let state = {
@@ -45,6 +46,16 @@ const loadLogin = () => {
   } catch (e) {
     return null;
   }
+};
+
+const isValidLogin = (creds) =>
+  creds && typeof creds.username === "string" && creds.username && typeof creds.password === "string" && creds.password;
+
+const ensureDefaultLogin = () => {
+  const stored = loadLogin();
+  if (isValidLogin(stored)) return stored;
+  saveLogin(DEFAULT_LOGIN.username, DEFAULT_LOGIN.password);
+  return { ...DEFAULT_LOGIN };
 };
 
 const encodeJSONFile = (content, filename) => {
@@ -208,13 +219,14 @@ function computeTotalFromItems(items){ return items.reduce((s,i)=> s + i.price*i
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;'}[m])); }
 
 /* ---------- auth flow ---------- */
-function showAuthScreen(setupMode=false) {
+function showAuthScreen(showNote = true) {
   authScreen.classList.remove("hidden");
   mainScreen.classList.add("hidden");
-  setupNote.style.display = setupMode ? "block" : "none";
+  setupNote.style.display = showNote ? "block" : "none";
   authMsg.textContent = "";
   authPassword.value = "";
-  authUsername.value = "";
+  const creds = ensureDefaultLogin();
+  authUsername.value = creds.username || DEFAULT_LOGIN.username;
 }
 
 function showMainScreen() {
@@ -228,8 +240,7 @@ function showMainScreen() {
 
 /* ---------- event wiring ---------- */
 authLoginBtn.addEventListener("click", () => {
-  const creds = loadLogin();
-  if (!creds) { authMsg.textContent = "Neexistují uložené přihlašovací údaje. Vytvoř účet (Setup)."; return; }
+  const creds = ensureDefaultLogin();
   const u = authUsername.value.trim(), p = authPassword.value;
   if (u === creds.username && p === creds.password) {
     showMainScreen();
@@ -245,7 +256,7 @@ authSetupBtn.addEventListener("click", () => {
   if (!p) return alert("Musíš zadat heslo.");
   saveLogin(u, p);
   alert("Účet byl vytvořen. Přihlaš se.");
-  showAuthScreen(false);
+  showAuthScreen(true);
 });
 
 addProductBtn.addEventListener("click", () => {
@@ -307,9 +318,8 @@ window.addEventListener("keydown", (e) => {
 
 /* ---------- init ---------- */
 function init() {
-  const creds = loadLogin();
-  if (!creds) showAuthScreen(true);
-  else showAuthScreen(false);
+  ensureDefaultLogin();
+  showAuthScreen(true);
 }
 
 init();
