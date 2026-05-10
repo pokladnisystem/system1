@@ -3,6 +3,7 @@
 /* ---------- storage keys ---------- */
 const KEY_LOGIN = "pokladna_login";
 const KEY_DATA = "pokladna_data";
+const DEFAULT_LOGIN = { username: "admin", password: "heslo" };
 
 /* ---------- app state ---------- */
 let state = {
@@ -45,6 +46,26 @@ const loadLogin = () => {
   } catch (e) {
     return null;
   }
+};
+
+const isValidLogin = (creds) => {
+  return (
+    creds &&
+    typeof creds.username === "string" &&
+    creds.username &&
+    typeof creds.password === "string" &&
+    creds.password
+  );
+};
+
+const isDefaultLogin = (creds) =>
+  creds && creds.username === DEFAULT_LOGIN.username && creds.password === DEFAULT_LOGIN.password;
+
+const ensureDefaultLogin = () => {
+  const stored = loadLogin();
+  if (isValidLogin(stored)) return stored;
+  saveLogin(DEFAULT_LOGIN.username, DEFAULT_LOGIN.password);
+  return DEFAULT_LOGIN;
 };
 
 const encodeJSONFile = (content, filename) => {
@@ -208,13 +229,15 @@ function computeTotalFromItems(items){ return items.reduce((s,i)=> s + i.price*i
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;'}[m])); }
 
 /* ---------- auth flow ---------- */
-function showAuthScreen(setupMode=false) {
+function showAuthScreen(showNote = true) {
   authScreen.classList.remove("hidden");
   mainScreen.classList.add("hidden");
-  setupNote.style.display = setupMode ? "block" : "none";
   authMsg.textContent = "";
   authPassword.value = "";
-  authUsername.value = "";
+  const creds = ensureDefaultLogin();
+  authUsername.value = creds.username || DEFAULT_LOGIN.username;
+  const shouldShowNote = showNote && isDefaultLogin(creds);
+  setupNote.style.display = shouldShowNote ? "block" : "none";
 }
 
 function showMainScreen() {
@@ -226,26 +249,58 @@ function showMainScreen() {
   renderSales();
 }
 
+function maybePromptDefaultPasswordChange(creds) {
+  if (!isDefaultLogin(creds)) return true;
+  const wantsChange = confirm("Používáš výchozí heslo. Chceš ho změnit?");
+  if (!wantsChange) return true;
+  showAuthScreen(false);
+  authMsg.textContent = "Zadej nové heslo (min. 8 znaků) a potvrď změnu tlačítkem Uložit přihlášení.";
+  authUsername.value = creds.username;
+  return false;
+}
+
 /* ---------- event wiring ---------- */
 authLoginBtn.addEventListener("click", () => {
-  const creds = loadLogin();
-  if (!creds) { authMsg.textContent = "Neexistují uložené přihlašovací údaje. Vytvoř účet (Setup)."; return; }
+  const creds = ensureDefaultLogin();
   const u = authUsername.value.trim(), p = authPassword.value;
   if (u === creds.username && p === creds.password) {
-    showMainScreen();
+    const shouldContinue = maybePromptDefaultPasswordChange(creds);
+    if (shouldContinue) {
+      showMainScreen();
+    }
   } else {
     authMsg.textContent = "Nesprávné přihlašovací údaje!";
   }
 });
 
 authSetupBtn.addEventListener("click", () => {
-  const u = authUsername.value.trim() || prompt("Zadej uživatelské jméno:");
+  const u = authUsername.value.trim();
   if (!u) return alert("Musíš zadat uživatelské jméno.");
-  const p = authPassword.value || prompt("Zadej heslo:");
+  const p = authPassword.value;
   if (!p) return alert("Musíš zadat heslo.");
+  if (p.length < 8) return alert("Heslo musí mít alespoň 8 znaků.");
+
+  let existingCreds = null;
+  const rawLogin = localStorage.getItem(KEY_LOGIN);
+  if (rawLogin) {
+    try {
+      existingCreds = JSON.parse(rawLogin);
+    } catch (_) {
+      existingCreds = null;
+    }
+  }
+
+  if (existingCreds && existingCreds.username && existingCreds.password) {
+    const currentPassword = prompt("Pro změnu přihlašovacích údajů zadej aktuální heslo:");
+    if (currentPassword === null) return;
+    if (currentPassword !== existingCreds.password) {
+      return alert("Aktuální heslo není správné.");
+    }
+  }
+
   saveLogin(u, p);
-  alert("Účet byl vytvořen. Přihlaš se.");
-  showAuthScreen(false);
+  alert("Přihlašovací údaje byly uloženy nebo změněny. Přihlaš se.");
+  showAuthScreen(true);
 });
 
 addProductBtn.addEventListener("click", () => {
@@ -296,7 +351,7 @@ clearSalesBtn.addEventListener("click", () => {
 });
 logoutBtn.addEventListener("click", () => {
   if (!confirm("Opravdu se odhlásit?")) return;
-  showAuthScreen(false);
+  showAuthScreen(true);
 });
 
 // klávesové zkratky
@@ -307,9 +362,8 @@ window.addEventListener("keydown", (e) => {
 
 /* ---------- init ---------- */
 function init() {
-  const creds = loadLogin();
-  if (!creds) showAuthScreen(true);
-  else showAuthScreen(false);
+  ensureDefaultLogin();
+  showAuthScreen(true);
 }
 
 init();
