@@ -3,6 +3,7 @@
 /* ---------- storage keys ---------- */
 const KEY_LOGIN = "pokladna_login";
 const KEY_DATA = "pokladna_data";
+const KEY_DEFAULT_ACK = "pokladna_default_login_ack";
 const DEFAULT_LOGIN = { username: "admin", password: "heslo" };
 
 /* ---------- app state ---------- */
@@ -58,10 +59,14 @@ const isValidLogin = (creds) => {
   );
 };
 
+const isDefaultLogin = (creds) =>
+  creds && creds.username === DEFAULT_LOGIN.username && creds.password === DEFAULT_LOGIN.password;
+
 const ensureDefaultLogin = () => {
   const stored = loadLogin();
   if (isValidLogin(stored)) return stored;
   saveLogin(DEFAULT_LOGIN.username, DEFAULT_LOGIN.password);
+  localStorage.removeItem(KEY_DEFAULT_ACK);
   return DEFAULT_LOGIN;
 };
 
@@ -245,12 +250,25 @@ function showMainScreen() {
   renderSales();
 }
 
+function maybePromptDefaultPasswordChange(creds) {
+  if (!isDefaultLogin(creds)) return;
+  if (localStorage.getItem(KEY_DEFAULT_ACK) === "1") return;
+  const wantsChange = confirm("Používáš výchozí heslo. Chceš ho změnit?");
+  localStorage.setItem(KEY_DEFAULT_ACK, "1");
+  if (!wantsChange) return;
+  const newPassword = prompt("Zadej nové heslo:");
+  if (!newPassword) return alert("Heslo nebylo změněno.");
+  saveLogin(creds.username, newPassword);
+  alert("Heslo bylo změněno.");
+}
+
 /* ---------- event wiring ---------- */
 authLoginBtn.addEventListener("click", () => {
   const creds = ensureDefaultLogin();
   const u = authUsername.value.trim(), p = authPassword.value;
   if (u === creds.username && p === creds.password) {
     showMainScreen();
+    maybePromptDefaultPasswordChange(creds);
   } else {
     authMsg.textContent = "Nesprávné přihlašovací údaje!";
   }
@@ -262,6 +280,7 @@ authSetupBtn.addEventListener("click", () => {
   const p = authPassword.value || prompt("Zadej heslo:");
   if (!p) return alert("Musíš zadat heslo.");
   saveLogin(u, p);
+  localStorage.setItem(KEY_DEFAULT_ACK, isDefaultLogin({ username: u, password: p }) ? "0" : "1");
   alert("Účet byl vytvořen. Přihlaš se.");
   showAuthScreen(true);
 });
@@ -314,7 +333,7 @@ clearSalesBtn.addEventListener("click", () => {
 });
 logoutBtn.addEventListener("click", () => {
   if (!confirm("Opravdu se odhlásit?")) return;
-  showAuthScreen(false);
+  showAuthScreen(true);
 });
 
 // klávesové zkratky
