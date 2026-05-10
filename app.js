@@ -232,11 +232,12 @@ function escapeHtml(s){ return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;'
 function showAuthScreen(showNote = true) {
   authScreen.classList.remove("hidden");
   mainScreen.classList.add("hidden");
-  setupNote.style.display = showNote ? "block" : "none";
   authMsg.textContent = "";
   authPassword.value = "";
   const creds = ensureDefaultLogin();
   authUsername.value = creds.username || DEFAULT_LOGIN.username;
+  const shouldShowNote = showNote && isDefaultLogin(creds);
+  setupNote.style.display = shouldShowNote ? "block" : "none";
 }
 
 function showMainScreen() {
@@ -249,12 +250,13 @@ function showMainScreen() {
 }
 
 function maybePromptDefaultPasswordChange(creds) {
-  if (!isDefaultLogin(creds)) return;
+  if (!isDefaultLogin(creds)) return true;
   const wantsChange = confirm("Používáš výchozí heslo. Chceš ho změnit?");
-  if (!wantsChange) return;
-  showAuthScreen(true);
+  if (!wantsChange) return true;
+  showAuthScreen(false);
   authMsg.textContent = "Zadej nové heslo (min. 8 znaků) a potvrď změnu tlačítkem Uložit přihlášení.";
   authUsername.value = creds.username;
+  return false;
 }
 
 /* ---------- event wiring ---------- */
@@ -262,8 +264,10 @@ authLoginBtn.addEventListener("click", () => {
   const creds = ensureDefaultLogin();
   const u = authUsername.value.trim(), p = authPassword.value;
   if (u === creds.username && p === creds.password) {
-    showMainScreen();
-    maybePromptDefaultPasswordChange(creds);
+    const shouldContinue = maybePromptDefaultPasswordChange(creds);
+    if (shouldContinue) {
+      showMainScreen();
+    }
   } else {
     authMsg.textContent = "Nesprávné přihlašovací údaje!";
   }
