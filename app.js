@@ -48,14 +48,21 @@ const loadLogin = () => {
   }
 };
 
-const isValidLogin = (creds) =>
-  creds && typeof creds.username === "string" && creds.username && typeof creds.password === "string" && creds.password;
+const isValidLogin = (creds) => {
+  return (
+    creds &&
+    typeof creds.username === "string" &&
+    creds.username &&
+    typeof creds.password === "string" &&
+    creds.password
+  );
+};
 
 const ensureDefaultLogin = () => {
   const stored = loadLogin();
   if (isValidLogin(stored)) return stored;
   saveLogin(DEFAULT_LOGIN.username, DEFAULT_LOGIN.password);
-  return { ...DEFAULT_LOGIN };
+  return DEFAULT_LOGIN;
 };
 
 const encodeJSONFile = (content, filename) => {
