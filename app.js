@@ -275,6 +275,25 @@ authSetupBtn.addEventListener("click", () => {
   const p = authPassword.value;
   if (!p) return alert("Musíš zadat heslo.");
   if (p.length < 8) return alert("Heslo musí mít alespoň 8 znaků.");
+
+  let existingCreds = null;
+  const rawLogin = localStorage.getItem(KEY_LOGIN);
+  if (rawLogin) {
+    try {
+      existingCreds = JSON.parse(rawLogin);
+    } catch (_) {
+      existingCreds = null;
+    }
+  }
+
+  if (existingCreds && existingCreds.username && existingCreds.password) {
+    const currentPassword = prompt("Pro změnu přihlašovacích údajů zadej aktuální heslo:");
+    if (currentPassword === null) return;
+    if (currentPassword !== existingCreds.password) {
+      return alert("Aktuální heslo není správné.");
+    }
+  }
+
   saveLogin(u, p);
   alert("Účet byl vytvořen. Přihlaš se.");
   showAuthScreen(true);
